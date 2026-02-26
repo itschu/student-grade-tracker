@@ -2,7 +2,7 @@ import axios from 'axios';
 import { performLogout } from '../contexts/AuthContext';
 
 const client = axios.create({
-	baseURL: 'http://localhost:5000',
+	baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000',
 });
 
 // request interceptor for auth header

@@ -130,32 +130,29 @@ def gradebook():
         # try to import WeasyPrint lazily so missing native deps don't crash app startup
         try:
             from weasyprint import HTML
-        except Exception as exc:  # includes ImportError or OSError from missing libs
-            return (
-                jsonify({
-                    "error": (
-                        "PDF export unavailable: WeasyPrint or its native dependencies are not installed. "
-                        "See README for installation instructions."
-                    )
-                }),
-                500,
+            
+            # enrich rows with per-assignment values for template
+            for r in rows:
+                for a in assignments:
+                    r[str(a.id)] = scores.get(r["student_id"], {}).get(str(a.id), 0)
+            html_string = render_template(
+                "gradebook.html",
+                course=course,
+                term=term,
+                assignments=assignments,
+                rows=rows,
+                generated_at=datetime.utcnow(),
             )
-
-        # enrich rows with per-assignment values for template
-        for r in rows:
-            for a in assignments:
-                r[str(a.id)] = scores.get(r["student_id"], {}).get(str(a.id), 0)
-        html_string = render_template(
-            "gradebook.html",
-            course=course,
-            term=term,
-            assignments=assignments,
-            rows=rows,
-            generated_at=datetime.utcnow(),
-        )
-        pdf_bytes = HTML(string=html_string).write_pdf()
-        return Response(
-            pdf_bytes,
-            mimetype="application/pdf",
-            headers={"Content-Disposition": f"attachment; filename=gradebook_{course_id}.pdf"},
-        )
+            pdf_bytes = HTML(string=html_string).write_pdf()
+            return Response(
+                pdf_bytes,
+                mimetype="application/pdf",
+                headers={"Content-Disposition": f"attachment; filename=gradebook_{course_id}.pdf"},
+            )
+        except (ImportError, OSError) as e:
+            # ImportError: WeasyPrint not installed
+            # OSError: missing native GTK/Pango dependencies at runtime
+            return (
+                jsonify({"error": "PDF export unavailable — WeasyPrint not installed"}),
+                503,
+            )

@@ -1,64 +1,88 @@
 # Student Grade Tracker
 
-This repository is a monorepo containing both backend and frontend applications for the Student Grade Tracker project.
+## Project Overview
 
-- `/backend` contains a Flask API using the application factory pattern.
-- `/frontend` contains a React (TypeScript) application powered by Vite and styled with Tailwind CSS.
+Student Grade Tracker is a full-stack web application built with Flask (backend) and React (frontend) backed by PostgreSQL. It supports three roles — **Admin**, **Teacher**, and **Student** — with semester-based course management, weighted grade calculations, per-role dashboards, and CSV/PDF export of gradebooks.
 
-## Prerequisites
+---
+
+## Tech Stack
+
+| Layer      | Technologies                                                    |
+| ---------- | --------------------------------------------------------------- |
+| Backend    | Flask, SQLAlchemy, Flask-JWT-Extended, Flask-Bcrypt, WeasyPrint |
+| Frontend   | React, Vite, Tailwind CSS, React Query, Recharts                |
+| Database   | PostgreSQL                                                      |
+| Deployment | Railway                                                         |
+
+---
+
+## Local Development
+
+### Prerequisites
 
 - Python 3.11+
 - Node 18+
-- Docker / Docker Compose (for optional local database)
+- PostgreSQL (local install) **or** Docker / Docker Compose
 
-## Setup
+### Backend Setup
 
-### Backend
+1. `cd backend`
+2. Create and activate a virtual environment, then `pip install -r requirements.txt`
+3. Copy `backend/.env.example` to `backend/.env` and fill in values — at minimum set `DATABASE_URL`, `ADMIN_EMAIL`, and `ADMIN_PASSWORD`
+4. **Start the local database** — from the repo root, either:
+    - `docker-compose up -d` (starts PostgreSQL 15; set `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB` in your shell or a root-level `.env` to match the `DATABASE_URL` you configured), **or**
+    - Use an existing local PostgreSQL instance
+5. Run migrations: `flask db upgrade`
+6. Start the server: `flask run` → available at `http://localhost:5000`
+7. Note: the admin user is **auto-created on first startup** using the `ADMIN_EMAIL` and `ADMIN_PASSWORD` values from your `.env` — no manual seeding required
 
-WeasyPrint is used for PDF exports and requires native GTK/Pango libraries. On Windows you must install these before running the server (otherwise Flask will crash at import time).
+### Frontend Setup
 
-**Windows installation options**
+1. `cd frontend`
+2. `npm install`
+3. Copy `frontend/.env.example` to `frontend/.env` — the default `VITE_API_URL=http://localhost:5000` is correct for local dev
+4. `npm run dev` → available at `http://localhost:5173`
 
-1. **MSYS2 (recommended)**
-    - Download and install MSYS2 from https://www.msys2.org/
-    - Open the MSYS2 MinGW 64-bit shell and run:
-        ```bash
-        pacman -Syu
-        pacman -S mingw-w64-x86_64-gtk3 mingw-w64-x86_64-pango \
-            mingw-w64-x86_64-cairo mingw-w64-x86_64-gdk-pixbuf
-        ```
-    - Add `C:\msys64\mingw64\bin` (or your MSYS2 path) to your `PATH` environment variable, or set `WEASYPRINT_DLL_DIRECTORIES` to that folder.
+### First Login
 
-2. **GTK runtime installer**
-    - Download the Windows GTK runtime (e.g. from https://gtk.org/download/windows/) and install.
-    - Add the GTK `bin` directory to your `PATH`.
+Use the `ADMIN_EMAIL` and `ADMIN_PASSWORD` values you set in `backend/.env`.
 
-After installing the native libraries, reactivate your virtual environment and verify that
-`python -c "from weasyprint import HTML; print('ok')"` runs without errors.
+---
 
-Once the prerequisites are satisfied, the typical backend startup is:
+## Railway Deployment
 
-```bash
-cd backend
-python -m venv .venv
-source .venv/bin/activate  # or .\.venv\Scripts\activate on Windows
-pip install -r requirements.txt
-cp .env.example .env
-flask run
-```
+1. Create a new Railway project
+2. Add the **PostgreSQL** plugin — Railway automatically sets `DATABASE_URL` on the backend service
+3. Add a **Backend service** with root directory set to `/backend`:
+    - Railway auto-detects `backend/Procfile` (`flask db upgrade && python -m flask run --host=0.0.0.0 --port=$PORT`)
+    - Set env vars: `JWT_SECRET_KEY` (generate with `openssl rand -hex 32`), `FLASK_APP=run.py`, `FLASK_ENV=production`, `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `FRONTEND_URL` (set this after the frontend service is created)
+4. Add a **Frontend service** with root directory set to `/frontend`:
+    - Railway auto-detects `frontend/nixpacks.toml` (runs `npm run build`, serves with `npx serve dist --listen $PORT`)
+    - Set env var: `VITE_API_URL` = the backend service's public Railway URL
+5. Go back to the backend service and set `FRONTEND_URL` = the frontend service's public Railway URL (required for CORS)
+6. First login: use the `ADMIN_EMAIL` / `ADMIN_PASSWORD` values you set in the Railway env panel
+7. PDF exports: WeasyPrint GTK/Pango dependencies are installed automatically via `backend/nixpacks.toml` — no manual action needed on Railway
 
-### Frontend
+---
 
-```bash
-cd frontend
-npm install
-npm run dev
-```
+## Environment Variables Reference
 
-## Docker
+| Variable         | Service  | Required | Description                                                          | Example                               |
+| ---------------- | -------- | -------- | -------------------------------------------------------------------- | ------------------------------------- |
+| `DATABASE_URL`   | Backend  | Yes      | PostgreSQL connection string — auto-set by Railway PostgreSQL plugin | `postgresql://user:pass@host:5432/db` |
+| `JWT_SECRET_KEY` | Backend  | Yes      | Random secret for JWT signing                                        | _(use `openssl rand -hex 32`)_        |
+| `FLASK_APP`      | Backend  | Yes      | Flask entry point                                                    | `run.py`                              |
+| `FLASK_ENV`      | Backend  | Yes      | Environment mode                                                     | `production`                          |
+| `ADMIN_EMAIL`    | Backend  | Yes      | First admin login email                                              | `admin@school.edu`                    |
+| `ADMIN_PASSWORD` | Backend  | Yes      | First admin login password                                           | _(use a strong password)_             |
+| `FRONTEND_URL`   | Backend  | Yes      | Frontend public URL — used for CORS                                  | `https://frontend.up.railway.app`     |
+| `VITE_API_URL`   | Frontend | Yes      | Backend public URL — injected at build time for API calls            | `https://backend.up.railway.app`      |
 
-A PostgreSQL database can be started via Docker Compose:
+---
 
-```bash
-docker-compose up -d
-```
+## WeasyPrint Note
+
+- **Linux / Railway**: GTK/Pango libraries are installed automatically via `backend/nixpacks.toml` — PDF export works out of the box.
+- **Windows (local dev)**: WeasyPrint requires native GTK/Pango libraries. If they are not installed, the PDF export endpoint returns a `503` error — **CSV export always works** as a fallback.
+- For Windows installation instructions, see the [WeasyPrint installation guide](https://doc.courtbouillon.org/weasyprint/stable/first_steps.html#windows)

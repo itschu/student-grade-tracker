@@ -1,4 +1,5 @@
 import os
+import logging
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_jwt_extended import JWTManager
@@ -6,6 +7,7 @@ from flask_bcrypt import Bcrypt
 from flask_migrate import Migrate
 from flask_cors import CORS
 from dotenv import load_dotenv
+from sqlalchemy import exc as sqlalchemy_exc
 
 # extensions
 db = SQLAlchemy()
@@ -28,10 +30,52 @@ def create_app(config=None):
     jwt.init_app(app)
     bcrypt.init_app(app)
     migrate.init_app(app, db)
-    CORS(app, origins=["http://localhost:5173"])
+    CORS(app, origins=[os.getenv("FRONTEND_URL", "http://localhost:5173")])
 
     # ensure models are imported so that metadata is attached to db
     from . import models  # noqa: F401
+
+    # bootstrap admin user from environment if not already created
+    with app.app_context():
+        try:
+            from .models import User, UserRole
+            logger = logging.getLogger(__name__)
+            
+            existing_admin = User.query.filter_by(role=UserRole.admin).first()
+            if existing_admin:
+                logger.info("Admin user already exists, skipping")
+            else:
+                admin_email = os.getenv("ADMIN_EMAIL")
+                admin_password = os.getenv("ADMIN_PASSWORD")
+                
+                if admin_email and admin_password:
+                    hashed = bcrypt.generate_password_hash(admin_password).decode("utf-8")
+                    admin = User(
+                        email=admin_email,
+                        password_hash=hashed,
+                        full_name="Admin",
+                        role=UserRole.admin,
+                        is_active=True,
+                    )
+                    db.session.add(admin)
+                    db.session.commit()
+                    logger.info("Admin user created from environment variables")
+                else:
+                    logger.warning(
+                        "ADMIN_EMAIL/ADMIN_PASSWORD not set — no admin user created. "
+                        "Set these env vars to bootstrap an admin."
+                    )
+        except (sqlalchemy_exc.ProgrammingError, sqlalchemy_exc.OperationalError) as e:
+            # Schema not yet created (e.g., during flask db upgrade on first deploy)
+            logger = logging.getLogger(__name__)
+            logger.warning(
+                "Database schema not ready — skipping admin bootstrap. "
+                "This is expected during migrations. The admin will be created after schema migration completes."
+            )
+        except Exception as e:
+            # Unexpected error, log but don't crash
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error during admin bootstrap: {e}")
 
     # register blueprints
     from .api.v1 import api_v1

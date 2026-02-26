@@ -58,10 +58,10 @@ const GradingConfigPage: React.FC = () => {
 									</div>
 									<div className="text-sm">
 										{(c.boundaries || []).map((b: any) => (
-										<div key={b.label} className="flex items-center gap-4 text-sm">
-											<div className="w-36 font-medium">{b.label}</div>
-											<div>Min %: {b.min_percentage}</div>
-											<div>Max %: {b.max_percentage}</div>
+											<div key={b.label} className="flex items-center gap-4 text-sm">
+												<div className="w-36 font-medium">{b.label}</div>
+												<div>Min %: {b.min_percentage}</div>
+												<div>Max %: {b.max_percentage}</div>
 												{b.gpa_value !== undefined && <div>GPA: {b.gpa_value}</div>}
 											</div>
 										))}
@@ -103,7 +103,7 @@ function CreateConfigModal({ terms, onClose, onCreate }: any) {
 	const [display_mode, setDisplayMode] = useState('percentage');
 	const [effective_from_term_id, setTerm] = useState(terms?.[0]?.id || '');
 	const [apply_all, setApplyAll] = useState(false);
-	const [boundaries, setBoundaries] = useState([
+	const [boundaries, setBoundaries] = useState<any[]>([
 		{ label: 'A', min_percentage: 90, max_percentage: 100, gpa_value: 4.0 },
 		{ label: 'B', min_percentage: 80, max_percentage: 89, gpa_value: 3.0 },
 		{ label: 'C', min_percentage: 70, max_percentage: 79, gpa_value: 2.0 },
@@ -118,15 +118,15 @@ function CreateConfigModal({ terms, onClose, onCreate }: any) {
 	// validation support
 	const [validationError, setValidationError] = useState<string | null>(null);
 	const validateBoundaries = () => {
+		if (boundaries.length === 0) return 'At least one boundary is required';
 		for (const b of boundaries) {
 			if (!b.label || b.label.trim() === '') return 'Each boundary must have a label';
 			if (b.min_percentage >= b.max_percentage) return 'Min must be less than max for each boundary';
-			if (display_mode === 'gpa' && (b.gpa_value === null || b.gpa_value === '')) return 'When using GPA display mode, each boundary must have a GPA value';
+			if (display_mode === 'gpa' && (b.gpa_value === null || isNaN(b.gpa_value))) return 'When using GPA display mode, each boundary must have a valid GPA value';
 		}
 		const sorted = [...boundaries].sort((a, b) => a.min_percentage - b.min_percentage);
 		for (let i = 0; i < sorted.length - 1; i++) {
-			if (sorted[i].max_percentage >= sorted[i + 1].min_percentage)
-				return 'Boundaries must not overlap and should increase sequentially';
+			if (sorted[i].max_percentage >= sorted[i + 1].min_percentage) return 'Boundaries must not overlap and should increase sequentially';
 		}
 		return null;
 	};
@@ -176,9 +176,7 @@ function CreateConfigModal({ terms, onClose, onCreate }: any) {
 								<input className="border px-2 py-1 w-28" value={b.label} onChange={(e) => updateBoundary(idx, { label: e.target.value })} placeholder="Label" />
 								<input className="border px-2 py-1 w-20" type="number" value={b.min_percentage} onChange={(e) => updateBoundary(idx, { min_percentage: Number(e.target.value) })} placeholder="Min %" />
 								<input className="border px-2 py-1 w-20" type="number" value={b.max_percentage} onChange={(e) => updateBoundary(idx, { max_percentage: Number(e.target.value) })} placeholder="Max %" />
-								{display_mode === 'gpa' && (
-									<input className="border px-2 py-1 w-28" type="number" step="0.1" value={b.gpa_value ?? ''} onChange={(e) => updateBoundary(idx, { gpa_value: e.target.value === '' ? null : Number(e.target.value) })} placeholder="GPA (optional)" />
-								)}
+								{display_mode === 'gpa' && <input className="border px-2 py-1 w-28" type="number" step="0.1" value={b.gpa_value ?? ''} onChange={(e) => updateBoundary(idx, { gpa_value: e.target.value === '' ? null : Number(e.target.value) })} placeholder="GPA" />}
 								<button className="text-red-600" onClick={() => removeBoundary(idx)}>
 									Remove
 								</button>

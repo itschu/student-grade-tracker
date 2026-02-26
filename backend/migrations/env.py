@@ -9,8 +9,9 @@ from sqlalchemy import engine_from_config, pool
 # access to the values within the .ini file in use.
 config = context.config
 
-# Interpret the config file for Python logging.
-fileConfig(config.config_file_name)
+# Interpret the config file for Python logging (only if it exists).
+if config.config_file_name and os.path.exists(config.config_file_name):
+	fileConfig(config.config_file_name)
 
 # add your model's MetaData object here
 # for 'autogenerate' support
