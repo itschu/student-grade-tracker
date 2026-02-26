@@ -30,6 +30,9 @@ def create_app(config=None):
     migrate.init_app(app, db)
     CORS(app, origins=["http://localhost:5173"])
 
+    # ensure models are imported so that metadata is attached to db
+    from . import models  # noqa: F401
+
     # register blueprints
     from .api.v1 import api_v1
 
