@@ -35,7 +35,22 @@ def create_app(config=None):
 
     # register blueprints
     from .api.v1 import api_v1
+    from .api.v1.auth import auth_bp
 
     app.register_blueprint(api_v1)
+    app.register_blueprint(auth_bp)
+
+    # JSON error handlers for auth decorators
+    @app.errorhandler(401)
+    def _unauthorized(err):
+        from flask import jsonify
+
+        return jsonify({"error": "Unauthorized"}), 401
+
+    @app.errorhandler(403)
+    def _forbidden(err):
+        from flask import jsonify
+
+        return jsonify({"error": "Forbidden"}), 403
 
     return app
