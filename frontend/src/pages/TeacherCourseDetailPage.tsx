@@ -1,13 +1,19 @@
-import React, { useState, useMemo } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import React, { useState, useMemo, useEffect } from 'react';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import client from '../api/client';
 import { useToast } from '../contexts/ToastContext';
+import { useTerm } from '../contexts/TermContext';
+import DashboardWidgets from '../components/shared/DashboardWidgets';
 import ConfirmDialog from '../components/shared/ConfirmDialog';
 
 const TeacherCourseDetailPage: React.FC = () => {
 	const { id } = useParams();
 	const navigate = useNavigate();
+	const location = useLocation();
+	const { activeTerm } = useTerm();
+	const courseFromState = (location.state as any)?.course;
+	const courseTermId: string = courseFromState?.term_id || activeTerm?.id || '';
 	const qc = useQueryClient();
 	const { showSuccess, showError } = useToast();
 
@@ -325,7 +331,7 @@ const TeacherCourseDetailPage: React.FC = () => {
 				</div>
 			)}
 
-			{activeTab === 'analytics' && <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-8 text-center text-gray-500">Analytics coming soon — will be wired in T11.</div>}
+			{activeTab === 'analytics' && <DashboardWidgets termId={courseTermId} courseId={id || null} />}
 
 			{/* Confirm Dialogs */}
 			<ConfirmDialog
