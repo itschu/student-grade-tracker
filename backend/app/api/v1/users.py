@@ -82,6 +82,7 @@ def update_user(user_id):
     data = request.get_json() or {}
     full_name = data.get("full_name")
     email = data.get("email")
+    password = data.get("password")
     is_active = data.get("is_active")
 
     if full_name is not None:
@@ -93,6 +94,11 @@ def update_user(user_id):
         user.email = email
     if is_active is not None:
         user.is_active = bool(is_active)
+
+    # Optional password reset: hash and store when provided
+    if password:
+        pw_hash = bcrypt.generate_password_hash(password).decode("utf-8")
+        user.password_hash = pw_hash
 
     db.session.commit()
     return jsonify(_user_dict(user)), 200

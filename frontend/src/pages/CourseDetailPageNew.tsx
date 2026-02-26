@@ -5,7 +5,7 @@ import client from '../api/client';
 import { useToast } from '../contexts/ToastContext';
 import ConfirmDialog from '../components/shared/ConfirmDialog';
 
-const CourseDetailPage: React.FC = () => {
+const CourseDetailPageNew: React.FC = () => {
 	const { id } = useParams();
 	const location = useLocation();
 	const navigate = useNavigate();
@@ -228,4 +228,4 @@ const CourseDetailPage: React.FC = () => {
 	);
 };
 
-export default CourseDetailPage;
+export default CourseDetailPageNew;
