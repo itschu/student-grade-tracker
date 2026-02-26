@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import client from '../../api/client';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import ExportButton from './ExportButton';
 
 interface Props {
 	termId: string;
@@ -53,6 +54,7 @@ const DashboardWidgets: React.FC<Props> = ({ termId, courseId }) => {
 					<button className="px-3 py-1 border border-gray-300 rounded text-sm hover:bg-gray-50" onClick={() => qc.invalidateQueries({ queryKey: ['analytics', termId, courseId] })}>
 						Refresh
 					</button>
+					<ExportButton courseId={courseId} />
 				</div>
 			</div>
 
@@ -141,7 +143,7 @@ const DashboardWidgets: React.FC<Props> = ({ termId, courseId }) => {
 						</thead>
 						<tbody>
 							{(data.assignment_averages || []).map((row: any) => (
-								<tr key={row.id} className="border-t">
+								<tr key={row.assignment_id} className="border-t">
 									<td className="px-4 py-3 text-sm text-gray-700">{row.name}</td>
 									<td className="px-4 py-3 text-sm text-gray-700">{row.average_score !== undefined && row.average_score !== null ? `${Number(row.average_score).toFixed(1)}` : '—'}</td>
 									<td className="px-4 py-3 text-sm text-gray-700">{row.max_points}</td>
