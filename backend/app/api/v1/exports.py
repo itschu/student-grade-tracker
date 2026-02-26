@@ -18,7 +18,6 @@ from app.services.grade_calculator import (
     get_effective_config,
     convert_to_display,
 )
-from weasyprint import HTML
 from sqlalchemy import func, and_, true
 
 
@@ -128,6 +127,20 @@ def gradebook():
         )
     else:
         # pdf branch
+        # try to import WeasyPrint lazily so missing native deps don't crash app startup
+        try:
+            from weasyprint import HTML
+        except Exception as exc:  # includes ImportError or OSError from missing libs
+            return (
+                jsonify({
+                    "error": (
+                        "PDF export unavailable: WeasyPrint or its native dependencies are not installed. "
+                        "See README for installation instructions."
+                    )
+                }),
+                500,
+            )
+
         # enrich rows with per-assignment values for template
         for r in rows:
             for a in assignments:
