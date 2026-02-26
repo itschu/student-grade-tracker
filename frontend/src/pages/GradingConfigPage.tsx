@@ -58,9 +58,10 @@ const GradingConfigPage: React.FC = () => {
 									</div>
 									<div className="text-sm">
 										{(c.boundaries || []).map((b: any) => (
-											<div key={b.name} className="flex items-center gap-4 text-sm">
-												<div className="w-36 font-medium">{b.name}</div>
-												<div>Min %: {b.min_percent}</div>
+										<div key={b.label} className="flex items-center gap-4 text-sm">
+											<div className="w-36 font-medium">{b.label}</div>
+											<div>Min %: {b.min_percentage}</div>
+											<div>Max %: {b.max_percentage}</div>
 												{b.gpa_value !== undefined && <div>GPA: {b.gpa_value}</div>}
 											</div>
 										))}
@@ -86,9 +87,10 @@ function EffectiveView({ config }: any) {
 			</div>
 			<div className="space-y-1">
 				{(config.boundaries || []).map((b: any) => (
-					<div key={b.name} className="flex gap-4 items-center">
-						<div className="font-medium w-36">{b.name}</div>
-						<div>Min %: {b.min_percent}</div>
+					<div key={b.label} className="flex gap-4 items-center">
+						<div className="font-medium w-36">{b.label}</div>
+						<div>Min %: {b.min_percentage}</div>
+						<div>Max %: {b.max_percentage}</div>
 						{b.gpa_value !== undefined && <div>GPA: {b.gpa_value}</div>}
 					</div>
 				))}
@@ -102,13 +104,32 @@ function CreateConfigModal({ terms, onClose, onCreate }: any) {
 	const [effective_from_term_id, setTerm] = useState(terms?.[0]?.id || '');
 	const [apply_all, setApplyAll] = useState(false);
 	const [boundaries, setBoundaries] = useState([
-		{ name: 'A', min_percent: 90, gpa_value: 4.0 },
-		{ name: 'B', min_percent: 80, gpa_value: 3.0 },
+		{ label: 'A', min_percentage: 90, max_percentage: 100, gpa_value: 4.0 },
+		{ label: 'B', min_percentage: 80, max_percentage: 89, gpa_value: 3.0 },
+		{ label: 'C', min_percentage: 70, max_percentage: 79, gpa_value: 2.0 },
+		{ label: 'D', min_percentage: 60, max_percentage: 69, gpa_value: 1.0 },
+		{ label: 'F', min_percentage: 0, max_percentage: 59, gpa_value: 0.0 },
 	]);
 
 	const updateBoundary = (idx: number, patch: any) => setBoundaries((prev) => prev.map((b, i) => (i === idx ? { ...b, ...patch } : b)));
-	const addBoundary = () => setBoundaries((prev) => [...prev, { name: '', min_percent: 0 }]);
+	const addBoundary = () => setBoundaries((prev) => [...prev, { label: '', min_percentage: 0, max_percentage: 0, gpa_value: null }]);
 	const removeBoundary = (idx: number) => setBoundaries((prev) => prev.filter((_, i) => i !== idx));
+
+	// validation support
+	const [validationError, setValidationError] = useState<string | null>(null);
+	const validateBoundaries = () => {
+		for (const b of boundaries) {
+			if (!b.label || b.label.trim() === '') return 'Each boundary must have a label';
+			if (b.min_percentage >= b.max_percentage) return 'Min must be less than max for each boundary';
+			if (display_mode === 'gpa' && (b.gpa_value === null || b.gpa_value === '')) return 'When using GPA display mode, each boundary must have a GPA value';
+		}
+		const sorted = [...boundaries].sort((a, b) => a.min_percentage - b.min_percentage);
+		for (let i = 0; i < sorted.length - 1; i++) {
+			if (sorted[i].max_percentage >= sorted[i + 1].min_percentage)
+				return 'Boundaries must not overlap and should increase sequentially';
+		}
+		return null;
+	};
 
 	return (
 		<div className="fixed inset-0 bg-black/40 z-40 flex items-center justify-center">
@@ -152,35 +173,44 @@ function CreateConfigModal({ terms, onClose, onCreate }: any) {
 					<div className="space-y-2">
 						{boundaries.map((b: any, idx: number) => (
 							<div key={idx} className="flex gap-2 items-center">
-								<input className="border px-2 py-1 w-28" value={b.name} onChange={(e) => updateBoundary(idx, { name: e.target.value })} placeholder="Name" />
-								<input className="border px-2 py-1 w-28" type="number" value={b.min_percent} onChange={(e) => updateBoundary(idx, { min_percent: Number(e.target.value) })} placeholder="Min %" />
-								<input className="border px-2 py-1 w-28" type="number" step="0.1" value={b.gpa_value ?? ''} onChange={(e) => updateBoundary(idx, { gpa_value: e.target.value === '' ? null : Number(e.target.value) })} placeholder="GPA (optional)" />
+								<input className="border px-2 py-1 w-28" value={b.label} onChange={(e) => updateBoundary(idx, { label: e.target.value })} placeholder="Label" />
+								<input className="border px-2 py-1 w-20" type="number" value={b.min_percentage} onChange={(e) => updateBoundary(idx, { min_percentage: Number(e.target.value) })} placeholder="Min %" />
+								<input className="border px-2 py-1 w-20" type="number" value={b.max_percentage} onChange={(e) => updateBoundary(idx, { max_percentage: Number(e.target.value) })} placeholder="Max %" />
+								{display_mode === 'gpa' && (
+									<input className="border px-2 py-1 w-28" type="number" step="0.1" value={b.gpa_value ?? ''} onChange={(e) => updateBoundary(idx, { gpa_value: e.target.value === '' ? null : Number(e.target.value) })} placeholder="GPA (optional)" />
+								)}
 								<button className="text-red-600" onClick={() => removeBoundary(idx)}>
 									Remove
 								</button>
 							</div>
 						))}
 					</div>
-				</div>
-
-				<div className="flex justify-end gap-2">
-					<button className="px-4 py-2 border rounded" onClick={onClose}>
-						Cancel
-					</button>
-					<button
-						className="px-4 py-2 bg-[#2c3e50] text-white rounded"
-						onClick={() => {
-							const payload = {
-								display_mode,
-								effective_from_term_id: effective_from_term_id || null,
-								apply_to_all_historical: apply_all,
-								boundaries: boundaries.map((bb: any) => ({ name: bb.name, min_percent: Number(bb.min_percent), gpa_value: bb.gpa_value === null ? null : bb.gpa_value })),
-							};
-							onCreate(payload);
-						}}
-					>
-						Create
-					</button>
+					{validationError && <div className="text-red-600 text-sm mb-2">{validationError}</div>}
+					<div className="flex justify-end gap-2">
+						<button className="px-4 py-2 border rounded" onClick={onClose}>
+							Cancel
+						</button>
+						<button
+							className="px-4 py-2 bg-[#2c3e50] text-white rounded"
+							onClick={() => {
+								const err = validateBoundaries();
+								if (err) {
+									setValidationError(err);
+									return;
+								}
+								setValidationError(null);
+								const payload = {
+									display_mode,
+									effective_from_term_id: effective_from_term_id || null,
+									apply_to_all_historical: apply_all,
+									boundaries: boundaries.map((bb: any) => ({ label: bb.label, min_percentage: Number(bb.min_percentage), max_percentage: Number(bb.max_percentage), gpa_value: bb.gpa_value === null ? null : bb.gpa_value })),
+								};
+								onCreate(payload);
+							}}
+						>
+							Create
+						</button>
+					</div>
 				</div>
 			</div>
 		</div>

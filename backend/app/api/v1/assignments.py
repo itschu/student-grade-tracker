@@ -1,5 +1,6 @@
 from flask import Blueprint, request, jsonify, g
 from sqlalchemy import and_
+from datetime import date
 
 from app import db
 from app.models import Assignment, AssignmentType, Grade
@@ -42,11 +43,18 @@ def create_assignment():
     type_val = data.get("type")
     max_points = data.get("max_points")
     course_id = data.get("course_id")
-    due_date = data.get("due_date")
-
+    
+    # Validate required fields
     if not name or not type_val or max_points is None or not course_id:
-        return jsonify({"error": "name, type, max_points, course_id are required"}), 400
-
+        return jsonify({"error": "name, type, max_points, and course_id are required"}), 400
+    
+    # parse ISO string to date object since column is Date
+    due_date_str = data.get("due_date")
+    try:
+        due_date = date.fromisoformat(due_date_str) if due_date_str else None
+    except ValueError:
+        return jsonify({"error": "due_date must be a valid ISO date"}), 400
+    
     try:
         type_enum = AssignmentType(type_val)
     except ValueError:
@@ -88,8 +96,12 @@ def update_assignment(assignment_id):
         except ValueError:
             return jsonify({"error": "Invalid assignment type"}), 422
     if "due_date" in data:
-        assignment.due_date = data.get("due_date")
-
+        # converting string to date or clearing
+        due_date_str = data.get("due_date")
+        try:
+            assignment.due_date = date.fromisoformat(due_date_str) if due_date_str else None
+        except ValueError:
+            return jsonify({"error": "due_date must be a valid ISO date"}), 400
     if "max_points" in data:
         new_max = data.get("max_points")
         try:

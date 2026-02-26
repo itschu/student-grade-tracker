@@ -24,12 +24,6 @@ const TeacherCourseDetailPage: React.FC = () => {
 		enabled: !!id,
 	});
 
-	const gradesQ = useQuery({
-		queryKey: ['grades', 'course', id],
-		queryFn: () => client.get(`/api/v1/grades?course_id=${id}`).then((r) => r.data),
-		enabled: !!id,
-	});
-
 	const termsQ = useQuery({
 		queryKey: ['terms'],
 		queryFn: () => client.get('/api/v1/terms').then((r) => r.data),
@@ -61,7 +55,7 @@ const TeacherCourseDetailPage: React.FC = () => {
 					try {
 						const res = await client.get(`/api/v1/grades?assignment_id=${a.id}&course_id=${id}`);
 						const data = res.data;
-						map[a.id] = !!(data && data.students && data.students.length > 0);
+						map[a.id] = !!(data?.students?.some((s: any) => s.earned_points !== null));
 					} catch (e) {
 						// If the request fails, assume false for now
 						map[a.id] = false;

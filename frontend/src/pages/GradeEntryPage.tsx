@@ -70,7 +70,7 @@ const GradeEntryPage: React.FC = () => {
 
 	// Save mutation
 	const saveMut = useMutation({
-		mutationFn: (payload: { assignment_id: number | string; course_id: number | string; grades: Array<{ student_id: number | string; earned_points: number }> }) => client.put('/api/v1/grades/bulk', payload).then((r) => r.data),
+		mutationFn: (payload: { assignment_id: string; course_id: string; grades: Array<{ student_id: string; earned_points: number | null }> }) => client.put('/api/v1/grades/bulk', payload).then((r) => r.data),
 		onSuccess: (data) => {
 			// Clear dirty states
 			setDirtyIds(new Set());
@@ -161,17 +161,21 @@ const GradeEntryPage: React.FC = () => {
 					className="px-4 py-2 bg-[#2c3e50] text-white rounded flex items-center disabled:opacity-50"
 					disabled={dirtyIds.size === 0 || saveMut.isPending}
 					onClick={() => {
-						// Prepare grades to save — only include students with numeric values
-						const gradesArray: Array<{ student_id: number | string; earned_points: number }> = Array.from(dirtyIds)
-							.map((studentId) => ({
-								student_id: Number(studentId),
-								earned_points: localScores[studentId] !== '' ? Number(localScores[studentId]) : NaN,
-							}))
-							.filter((g) => !Number.isNaN(g.earned_points));
+						// Prepare grades to save — include cleared values as null, no id coercion
+						const gradesArray: Array<{ student_id: string; earned_points: number | null }> = Array.from(dirtyIds).map((studentId) => {
+							const raw = localScores[studentId];
+							let earned_points: number | null;
+							if (raw === '' || raw === undefined) {
+								earned_points = null;
+							} else {
+								earned_points = parseFloat(raw);
+							}
+							return { student_id: studentId, earned_points };
+						});
 
 						const payload = {
-							assignment_id: Number(assignmentId),
-							course_id: Number(courseId),
+							assignment_id: assignmentId!,
+							course_id: courseId!,
 							grades: gradesArray,
 						};
 

@@ -44,6 +44,7 @@ def create_app(config=None):
     from .api.v1.grades import grades_bp
     from .api.v1.analytics import analytics_bp
     from .api.v1.exports import exports_bp
+    from .api.v1.student import student_bp
 
     app.register_blueprint(api_v1)
     app.register_blueprint(auth_bp)
@@ -55,6 +56,7 @@ def create_app(config=None):
     app.register_blueprint(grades_bp)
     app.register_blueprint(analytics_bp)
     app.register_blueprint(exports_bp)
+    app.register_blueprint(student_bp)
 
     # JSON error handlers for auth decorators
     @app.errorhandler(401)

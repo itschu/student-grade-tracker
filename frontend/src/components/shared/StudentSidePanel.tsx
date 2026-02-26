@@ -61,10 +61,13 @@ const StudentSidePanel: React.FC<StudentSidePanelProps> = ({ studentId, courseId
 								</thead>
 								<tbody>
 									{studentGradesQ.data?.assignments?.map((assignment: any) => {
-										const percentage = assignment.max_points > 0 && assignment.earned_points !== null ? ((assignment.earned_points / assignment.max_points) * 100).toFixed(1) + '%' : '—';
+										// ungraded should count as zero percent per spec
+							const percentage = assignment.max_points > 0
+								? (((assignment.earned_points ?? 0) / assignment.max_points) * 100).toFixed(1) + '%'
+								: '—';
 
 										return (
-											<tr key={assignment.id} className="border-t">
+											<tr key={assignment.assignment_id} className="border-t">
 												<td className="px-2 py-2">{assignment.name}</td>
 												<td className="px-2 py-2">{assignment.type}</td>
 												<td className="px-2 py-2">{assignment.earned_points !== null ? assignment.earned_points : '—'}</td>

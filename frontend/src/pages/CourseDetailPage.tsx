@@ -106,7 +106,7 @@ const CourseDetailPage: React.FC = () => {
 								</tr>
 							</thead>
 							<tbody>
-								{(studentsQ.data?.students || []).map((s: any) => (
+								{(studentsQ.data || []).map((s: any) => (
 									<tr key={s.id} className="border-t">
 										<td className="px-4 py-3">{s.full_name}</td>
 										<td className="px-4 py-3">{s.email}</td>
@@ -177,7 +177,7 @@ const CourseDetailPage: React.FC = () => {
 						<h2 className="text-lg font-semibold mb-4">Enroll Students</h2>
 						<div className="mb-4">
 							{(studentsAllQ.data || [])
-								.filter((u: any) => !(studentsQ.data?.students || []).find((s: any) => s.id === u.id))
+								.filter((u: any) => !(studentsQ.data || []).find((s: any) => s.id === u.id))
 								.map((u: any) => (
 									<div key={u.id} className="flex items-center gap-2 mb-2">
 										<input

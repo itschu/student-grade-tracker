@@ -2,15 +2,23 @@ import React, { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import client from '../../api/client';
 import { useTerm, Term } from '../../contexts/TermContext';
+import { useAuth } from '../../contexts/AuthContext';
 
-const fetchTerms = async () => {
-	const resp = await client.get('/api/v1/terms');
+// fetch logic will depend on role (student vs admin/teacher)
+const fetchTerms = async (isStudent: boolean) => {
+	const url = isStudent ? '/api/v1/student/terms' : '/api/v1/terms';
+	const resp = await client.get(url);
 	return resp.data;
 };
 
 const TermSelector: React.FC = () => {
 	const { activeTerm, setActiveTerm } = useTerm();
-	const { data, isLoading } = useQuery(['terms'], fetchTerms);
+	const { state } = useAuth();
+	const isStudent = state?.role === 'student';
+	const { data, isLoading } = useQuery({
+		queryKey: ['terms', isStudent ? 'student' : 'admin-teacher'],
+		queryFn: () => fetchTerms(isStudent),
+	});
 
 	useEffect(() => {
 		if (!activeTerm && data && Array.isArray(data)) {

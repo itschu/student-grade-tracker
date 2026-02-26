@@ -22,7 +22,7 @@ def _term_dict(term: Term) -> dict:
 
 @terms_bp.route("/", methods=["GET"])
 @require_auth
-@require_role("admin")
+@require_role("admin", "teacher")
 def list_terms():
     terms = Term.query.order_by(Term.start_date.desc()).all()
     return jsonify([_term_dict(t) for t in terms]), 200

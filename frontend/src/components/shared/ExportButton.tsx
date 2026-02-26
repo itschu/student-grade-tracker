@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useToast } from '../../contexts/ToastContext';
+import client from '../../api/client';
 
 interface ExportButtonProps {
 	courseId: string | null;
@@ -29,34 +30,42 @@ const ExportButton: React.FC<ExportButtonProps> = ({ courseId, disabled }) => {
 		setLoading(true);
 		setDropdownOpen(false);
 		try {
-			const token = localStorage.getItem('token');
-			const resp = await fetch(`/api/v1/exports/gradebook?course_id=${courseId}&format=${format}`, {
-				headers: {
-					Authorization: `Bearer ${token}`,
-				},
+			const response = await client.get('/api/v1/exports/gradebook', {
+				params: { course_id: courseId, format },
+				responseType: 'blob',
 			});
 
-			if (resp.status === 422) {
-				const body = await resp.json();
-				showError(body.error || 'Export too large. Please select a smaller course.');
-				return;
-			}
-			if (!resp.ok) {
-				showError('Export failed. Please try again.');
-				return;
+			const blob = response.data;
+			// extract filename from header if possible
+			let filename = `gradebook_${courseId}.${format}`;
+			const cd = response.headers['content-disposition'];
+			if (cd) {
+				const match = cd.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+				if (match && match[1]) {
+					filename = match[1].replace(/['"]/g, '');
+				}
 			}
 
-			const blob = await resp.blob();
 			const url = URL.createObjectURL(blob);
 			const a = document.createElement('a');
 			a.href = url;
-			a.download = `gradebook_${courseId}.${format}`;
+			a.download = filename;
 			document.body.appendChild(a);
 			a.click();
 			document.body.removeChild(a);
 			URL.revokeObjectURL(url);
-		} catch (e) {
-			showError('Export failed. Please try again.');
+		} catch (err: any) {
+			if (err.response?.status === 422) {
+				try {
+					const text = await err.response.data.text();
+					const body = JSON.parse(text);
+					showError(body.error || 'Export too large (max 30 students × 30 assignments)');
+				} catch {
+					showError('Export too large (max 30 students × 30 assignments)');
+				}
+			} else {
+				showError('Export failed. Please try again.');
+			}
 		} finally {
 			setLoading(false);
 		}

@@ -34,44 +34,24 @@ interface CourseCardProps {
 	onToggle: () => void;
 }
 
-const CourseCard: React.FC<CourseCardProps> = ({
-	course,
-	isExpanded,
-	isFetched,
-	userId,
-	onToggle,
-}) => {
+const CourseCard: React.FC<CourseCardProps> = ({ course, isExpanded, isFetched, userId, onToggle }) => {
 	const gradeQuery = useQuery<GradeData>({
 		queryKey: ['grades', 'student', course.id, userId],
-		queryFn: () =>
-			client
-				.get(`/api/v1/grades/student?course_id=${course.id}&student_id=${userId}`)
-				.then((r) => r.data),
+		queryFn: () => client.get(`/api/v1/grades/student?course_id=${course.id}&student_id=${userId}`).then((r) => r.data),
 		enabled: isExpanded && !!userId,
 	});
 
 	return (
 		<div>
 			{/* header */}
-			<div
-				className="flex items-center justify-between px-4 py-4 cursor-pointer hover:bg-gray-50"
-			onClick={onToggle}
-			>
+			<div className="flex items-center justify-between px-4 py-4 cursor-pointer hover:bg-gray-50" onClick={onToggle}>
 				<div>
 					<div className="font-semibold">{course.name}</div>
-					{course.teacher_name && (
-						<div className="text-sm text-gray-500">{course.teacher_name}</div>
-					)}
+					{course.teacher_name && <div className="text-sm text-gray-500">{course.teacher_name}</div>}
 				</div>
 				<div className="flex items-center gap-2">
-					{isFetched && gradeQuery.data && (
-						<span className="px-3 py-1 rounded-full text-sm font-semibold bg-[#2c3e50] text-white">
-							{gradeQuery.data.display_grade}
-						</span>
-					)}
-					<span className="text-gray-600">
-						{isExpanded ? '▲' : '▼'}
-					</span>
+					{isFetched && gradeQuery.data && <span className="px-3 py-1 rounded-full text-sm font-semibold bg-[#2c3e50] text-white">{gradeQuery.data.display_grade}</span>}
+					<span className="text-gray-600">{isExpanded ? '▲' : '▼'}</span>
 				</div>
 			</div>
 
@@ -97,56 +77,32 @@ const CourseCard: React.FC<CourseCardProps> = ({
 								<table className="w-full border-collapse">
 									<thead>
 										<tr className="bg-gray-50">
-											<th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide bg-gray-50">
-												Assignment Name
-											</th>
-											<th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide bg-gray-50">
-												Type
-											</th>
-											<th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide bg-gray-50">
-												Score
-											</th>
-											<th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide bg-gray-50">
-												Max
-											</th>
-											<th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide bg-gray-50">
-												Percentage
-											</th>
+											<th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide bg-gray-50">Assignment Name</th>
+											<th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide bg-gray-50">Type</th>
+											<th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide bg-gray-50">Score</th>
+											<th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide bg-gray-50">Max</th>
+											<th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide bg-gray-50">Percentage</th>
 										</tr>
 									</thead>
 									<tbody>
 										{gradeQuery.data.assignments.map((a) => (
 											<tr key={a.id}>
-												<td className="px-4 py-3 text-sm text-gray-700 border-t border-gray-100">
-													{a.name}
-												</td>
-												<td className="px-4 py-3 text-sm text-gray-700 border-t border-gray-100">
-												{a.type}
-												</td>
-												<td className={`${a.earned_points === null ? 'text-gray-400' : ''} px-4 py-3 text-sm text-gray-700 border-t border-gray-100`}>
-												{a.earned_points === null ? '—' : a.earned_points}
-												</td>
-												<td className="px-4 py-3 text-sm text-gray-700 border-t border-gray-100">
-												{a.max_points}
-												</td>
-												<td className={`${a.earned_points === null ? 'text-gray-400' : ''} px-4 py-3 text-sm text-gray-700 border-t border-gray-100`}>
-												{a.earned_points === null
-													? '0.0%'
-													: ((a.earned_points / a.max_points) * 100).toFixed(1) + '%'}
-												</td>
+												<td className="px-4 py-3 text-sm text-gray-700 border-t border-gray-100">{a.name}</td>
+												<td className="px-4 py-3 text-sm text-gray-700 border-t border-gray-100">{a.type}</td>
+												<td className={`${a.earned_points === null ? 'text-gray-400' : ''} px-4 py-3 text-sm text-gray-700 border-t border-gray-100`}>{a.earned_points === null ? '—' : a.earned_points}</td>
+												<td className="px-4 py-3 text-sm text-gray-700 border-t border-gray-100">{a.max_points}</td>
+												<td className={`${a.earned_points === null ? 'text-gray-400' : ''} px-4 py-3 text-sm text-gray-700 border-t border-gray-100`}>{a.earned_points === null ? '0.0%' : ((a.earned_points / a.max_points) * 100).toFixed(1) + '%'}</td>
 											</tr>
 										))}
 										<tr className="font-bold bg-gray-50">
 											<td colSpan={4} className="px-4 py-3 text-sm text-gray-700 border-t border-gray-100">
 												Final Grade
-												</td>
-											<td className="px-4 py-3 text-sm text-gray-700 border-t border-gray-100">
-												{gradeQuery.data.display_grade}
-												</td>
-											</tr>
+											</td>
+											<td className="px-4 py-3 text-sm text-gray-700 border-t border-gray-100">{gradeQuery.data.display_grade}</td>
+										</tr>
 									</tbody>
 								</table>
-							)
+							)}
 						</>
 					) : null}
 				</div>
@@ -172,13 +128,13 @@ export default function MyGradesPage() {
 	}, [activeTerm]);
 
 	const termsQuery = useQuery({
-		queryKey: ['terms'],
-		queryFn: () => client.get('/api/v1/terms').then((r) => r.data),
+		queryKey: ['student', 'terms'],
+		queryFn: () => client.get('/api/v1/student/terms').then((r) => r.data),
 	});
 
 	const coursesQuery = useQuery({
-		queryKey: ['courses', selectedTermId],
-		queryFn: () => client.get(`/api/v1/courses?term_id=${selectedTermId}`).then((r) => r.data),
+		queryKey: ['student', 'courses', selectedTermId],
+		queryFn: () => client.get(`/api/v1/student/courses?term_id=${selectedTermId}`).then((r) => r.data),
 		enabled: !!selectedTermId,
 	});
 
@@ -209,12 +165,7 @@ export default function MyGradesPage() {
 		<div className="space-y-4">
 			<div className="flex items-center justify-between mb-6">
 				<h1 className="text-2xl font-bold">My Grades</h1>
-				<select
-					className="border px-3 py-2 rounded text-sm"
-					value={selectedTermId}
-					onChange={(e) => handleTermChange(e.target.value)}
-					disabled={termsQuery.isLoading}
-				>
+				<select className="border px-3 py-2 rounded text-sm" value={selectedTermId} onChange={(e) => handleTermChange(e.target.value)} disabled={termsQuery.isLoading}>
 					<option value="">Select term</option>
 					{termsQuery.data?.map((t: any) => (
 						<option key={t.id} value={t.id}>
@@ -239,21 +190,11 @@ export default function MyGradesPage() {
 				<div className="p-4 text-gray-600">No courses found for this term.</div>
 			) : (
 				coursesQuery.data?.map((course: Course) => (
-					<div
-						key={course.id}
-						className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden"
-					>
-						<CourseCard
-							course={course}
-							isExpanded={expandedIds.has(course.id)}
-							isFetched={fetchedIds.has(course.id)}
-							userId={userId}
-							onToggle={() => handleToggle(course.id)}
-						/>
+					<div key={course.id} className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+						<CourseCard course={course} isExpanded={expandedIds.has(course.id)} isFetched={fetchedIds.has(course.id)} userId={userId} onToggle={() => handleToggle(course.id)} />
 					</div>
 				))
 			)}
 		</div>
 	);
 }
-

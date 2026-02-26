@@ -110,8 +110,13 @@ def bulk_grades():
 
     # validate
     for entry in grades_list:
+        earned_val = entry.get("earned_points")
+        # allow explicit nulls; they represent cleared grades and need no numeric
+        # validation (write loop handles None correctly)
+        if earned_val is None:
+            continue
         try:
-            earned = float(entry.get("earned_points"))
+            earned = float(earned_val)
         except (TypeError, ValueError):
             return jsonify({"error": "earned_points must be numeric"}), 400
         if earned > float(assignment.max_points):
