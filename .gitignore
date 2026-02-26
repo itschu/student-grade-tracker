@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+*.egg-info/
+dist/
+.pytest_cache/
+
+# Node
+node_modules/
+dist/
+.next/
+.cache/
+
+# Environment / secrets
+.env
+*.env
+!.env.example
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
