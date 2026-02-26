@@ -10,6 +10,7 @@ import UsersPage from "./pages/UsersPage";
 import TermsPage from "./pages/TermsPage";
 import CoursesPage from "./pages/CoursesPage";
 import CourseDetailPage from "./pages/CourseDetailPage";
+import TeacherCourseDetailPage from "./pages/TeacherCourseDetailPage";
 import GradeEntryPage from "./pages/GradeEntryPage";
 import GradingConfigPage from "./pages/GradingConfigPage";
 import MyGradesPage from "./pages/MyGradesPage";
@@ -33,12 +34,13 @@ const App: React.FC = () => {
       <Route path="/" element={<RoleRedirect />} />
 
       {/* protected routes */}
-      <Route element={<ProtectedRoute allowedRoles={["admin", "teacher"]} />}> 
-        <Route element={<AppShell />}> 
+      <Route element={<ProtectedRoute allowedRoles={["admin", "teacher"]} />}>
+        <Route element={<AppShell />}>
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/courses" element={<CoursesPage />} />
           <Route path="/courses/:id" element={<CourseDetailPage />} />
           <Route element={<ProtectedRoute allowedRoles={["teacher"]} />}>
+            <Route path="/teacher/courses/:id" element={<TeacherCourseDetailPage />} />
             <Route path="/courses/:id/grades/:assignmentId" element={<GradeEntryPage />} />
           </Route>
         </Route>

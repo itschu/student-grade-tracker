@@ -4,11 +4,13 @@ import client from '../api/client';
 import { useTerm } from '../contexts/TermContext';
 import { useToast } from '../contexts/ToastContext';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 
 const CoursesPage: React.FC = () => {
 	const qc = useQueryClient();
 	const { showSuccess, showError } = useToast();
 	const { activeTerm } = useTerm();
+	const { state } = useAuth();
 	const navigate = useNavigate();
 
 	const [newOpen, setNewOpen] = useState(false);
@@ -33,7 +35,15 @@ const CoursesPage: React.FC = () => {
 		onError: (e: any) => showError(e?.response?.data?.error || 'Failed to create'),
 	});
 
-	const list = useMemo(() => coursesQ.data || [], [coursesQ.data]);
+	const list = useMemo(() => {
+		if (!coursesQ.data) return [];
+		if (state?.role === 'teacher') {
+			return coursesQ.data.filter((c: any) => c.teacher_id === state.user_id);
+		}
+		return coursesQ.data;
+	}, [coursesQ.data, state]);
+
+	const isTeacher = state?.role === 'teacher';
 
 	return (
 		<div>
@@ -42,9 +52,11 @@ const CoursesPage: React.FC = () => {
 					<h1 className="text-2xl font-bold">Courses</h1>
 					<div className="text-sm text-gray-600">{activeTerm ? `Active term: ${activeTerm.name}` : 'No active term selected'}</div>
 				</div>
-				<button className="px-4 py-2 bg-[#2c3e50] text-white rounded" onClick={() => setNewOpen(true)}>
-					+ New Course
-				</button>
+				{!isTeacher && (
+					<button className="px-4 py-2 bg-[#2c3e50] text-white rounded" onClick={() => setNewOpen(true)}>
+						+ New Course
+					</button>
+				)}
 			</div>
 
 			<div className="bg-white rounded-lg border border-gray-200 shadow-sm">
@@ -65,15 +77,39 @@ const CoursesPage: React.FC = () => {
 							<tr className="bg-gray-50">
 								<th className="px-4 py-3 text-left">Course Name</th>
 								<th className="px-4 py-3 text-left">Term</th>
-								<th className="px-4 py-3 text-left">Teacher</th>
+								{isTeacher ? (
+									<>
+										<th className="px-4 py-3 text-left">Enrolled</th>
+										<th className="px-4 py-3 text-left">Class Average</th>
+									</>
+								) : (
+									<th className="px-4 py-3 text-left">Teacher</th>
+								)}
 							</tr>
 						</thead>
 						<tbody>
 							{list.map((c: any) => (
-								<tr key={c.id} className="border-t hover:bg-gray-50 cursor-pointer" onClick={() => navigate(`/courses/${c.id}`, { state: { course: c } })}>
+								<tr
+									key={c.id}
+									className="border-t hover:bg-gray-50 cursor-pointer"
+									onClick={() => {
+										if (isTeacher) {
+											navigate(`/teacher/courses/${c.id}`, { state: { course: c } });
+										} else {
+											navigate(`/courses/${c.id}`, { state: { course: c } });
+										}
+									}}
+								>
 									<td className="px-4 py-3">{c.name}</td>
 									<td className="px-4 py-3">{termsQ.data?.find((t: any) => t.id === c.term_id)?.name || '-'}</td>
-									<td className="px-4 py-3">{teachersQ.data?.find((u: any) => u.id === c.teacher_id)?.full_name || '-'}</td>
+									{isTeacher ? (
+										<>
+											<td className="px-4 py-3">{c.student_count !== undefined ? c.student_count : '-'}</td>
+											<td className="px-4 py-3">{c.class_average !== undefined ? c.class_average.toFixed(1) : '-'}</td>
+										</>
+									) : (
+										<td className="px-4 py-3">{teachersQ.data?.find((u: any) => u.id === c.teacher_id)?.full_name || '-'}</td>
+									)}
 								</tr>
 							))}
 						</tbody>
