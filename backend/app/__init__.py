@@ -36,9 +36,17 @@ def create_app(config=None):
     # register blueprints
     from .api.v1 import api_v1
     from .api.v1.auth import auth_bp
+    from .api.v1.config import config_bp
+    from .api.v1.users import users_bp
+    from .api.v1.terms import terms_bp
+    from .api.v1.courses import courses_bp
 
     app.register_blueprint(api_v1)
     app.register_blueprint(auth_bp)
+    app.register_blueprint(config_bp)
+    app.register_blueprint(users_bp)
+    app.register_blueprint(terms_bp)
+    app.register_blueprint(courses_bp)
 
     # JSON error handlers for auth decorators
     @app.errorhandler(401)
