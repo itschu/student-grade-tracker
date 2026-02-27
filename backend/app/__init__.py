@@ -15,6 +15,8 @@ jwt = JWTManager()
 bcrypt = Bcrypt()
 migrate = Migrate()
 
+_bootstrap_warning_logged = False
+
 
 def create_app(config=None):
     load_dotenv()
@@ -23,6 +25,9 @@ def create_app(config=None):
 
     # configuration from environment
     db_url = os.getenv("DATABASE_URL")
+    # normalize older DATABASE_URL values using the deprecated postgres:// scheme
+    if db_url and db_url.startswith("postgres://"):
+        db_url = db_url.replace("postgres://", "postgresql://", 1)
     # Flask-SQLAlchemy will treat a relative SQLite path as relative to
     # `app.instance_path`, but Alembic (used by `flask db upgrade`) bypasses
     # that shortcut and uses the raw value from config.  If the value is a
@@ -35,6 +40,11 @@ def create_app(config=None):
         # ensure directory exists
         os.makedirs(os.path.dirname(abs_path), exist_ok=True)
         db_url = "sqlite:///" + abs_path.replace("\\", "/")
+    # logger at function scope and log normalized DB scheme
+    logger = logging.getLogger(__name__)
+    scheme = db_url.split("://")[0] if db_url else "not set"
+    logger.info(f"Database scheme: {scheme}")
+
     app.config["SQLALCHEMY_DATABASE_URI"] = db_url
     app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY")
     jwt_key = os.getenv("JWT_SECRET_KEY", "")
@@ -61,15 +71,14 @@ def create_app(config=None):
     with app.app_context():
         try:
             from .models import User, UserRole
-            logger = logging.getLogger(__name__)
-            
+
             existing_admin = User.query.filter_by(role=UserRole.admin.value).first()
             if existing_admin:
                 logger.info("Admin user already exists, skipping")
             else:
                 admin_email = os.getenv("ADMIN_EMAIL")
                 admin_password = os.getenv("ADMIN_PASSWORD")
-                
+
                 if admin_email and admin_password:
                     hashed = bcrypt.generate_password_hash(admin_password).decode("utf-8")
                     admin = User(
@@ -81,7 +90,7 @@ def create_app(config=None):
                     )
                     db.session.add(admin)
                     db.session.commit()
-                    logger.info("Admin user created from environment variables")
+                    logger.info(f"Admin user created: {admin_email}")
                 else:
                     logger.warning(
                         "ADMIN_EMAIL/ADMIN_PASSWORD not set — no admin user created. "
@@ -89,14 +98,15 @@ def create_app(config=None):
                     )
         except (sqlalchemy_exc.ProgrammingError, sqlalchemy_exc.OperationalError) as e:
             # Schema not yet created (e.g., during flask db upgrade on first deploy)
-            logger = logging.getLogger(__name__)
-            logger.warning(
-                "Database schema not ready — skipping admin bootstrap. "
-                "This is expected during migrations. The admin will be created after schema migration completes."
-            )
+            global _bootstrap_warning_logged
+            if not _bootstrap_warning_logged:
+                logger.warning(
+                    "Database schema not ready — skipping admin bootstrap. "
+                    "This is expected during migrations. The admin will be created after schema migration completes."
+                )
+                _bootstrap_warning_logged = True
         except Exception as e:
             # Unexpected error, log but don't crash
-            logger = logging.getLogger(__name__)
             logger.error(f"Error during admin bootstrap: {e}")
 
     # register blueprints
