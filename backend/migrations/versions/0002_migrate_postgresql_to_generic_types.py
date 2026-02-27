@@ -1,6 +1,6 @@
 """migrate postgresql uuid and enum to generic string types
 
-Revision ID: 0002_migrate_postgresql_to_generic_types
+Revision ID: 0002_migrate_pg_generic
 Revises: 0001_initial_schema
 Create Date: 2026-02-26 01:00:00.000000
 """
@@ -9,7 +9,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision = '0002_migrate_postgresql_to_generic_types'
+revision = '0002_migrate_pg_generic'
 down_revision = '0001_initial_schema'
 branch_labels = None
 depends_on = None
