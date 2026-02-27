@@ -206,8 +206,7 @@ def upgrade():
         "  BEGIN DROP TYPE userrole; EXCEPTION WHEN undefined_object THEN END; "
         "  BEGIN DROP TYPE assignmenttype; EXCEPTION WHEN undefined_object THEN END; "
         "  BEGIN DROP TYPE displaymode; EXCEPTION WHEN undefined_object THEN END; "
-        "END $$;",
-        dialect='postgresql'
+        "END $$;"
     )
 
 
