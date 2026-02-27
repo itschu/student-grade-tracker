@@ -62,7 +62,20 @@ def create_app(config=None):
     jwt.init_app(app)
     bcrypt.init_app(app)
     migrate.init_app(app, db)
-    CORS(app, origins=[os.getenv("FRONTEND_URL", "http://localhost:5173")])
+    # Configure allowed frontend origins from env. Support a comma-separated
+    # list in `FRONTEND_ORIGINS` for production (Railway) where the frontend
+    # and backend are on different hostnames. Falls back to `FRONTEND_URL` or
+    # the local dev origin.
+    frontend_origins = os.getenv("FRONTEND_ORIGINS", os.getenv("FRONTEND_URL", "http://localhost:5173"))
+    if frontend_origins:
+        allowed_origins = [o.strip() for o in frontend_origins.split(",") if o.strip()]
+    else:
+        allowed_origins = ["http://localhost:5173"]
+
+    # Apply CORS only to API routes and allow credentials for JS clients
+    CORS(app,
+         resources={r"/api/*": {"origins": allowed_origins}},
+         supports_credentials=True)
 
     # ensure models are imported so that metadata is attached to db
     from . import models  # noqa: F401
