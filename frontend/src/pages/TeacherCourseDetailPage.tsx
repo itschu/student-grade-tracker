@@ -55,7 +55,7 @@ const TeacherCourseDetailPage: React.FC = () => {
 					try {
 						const res = await client.get(`/api/v1/grades?assignment_id=${a.id}&course_id=${id}`);
 						const data = res.data;
-						map[a.id] = !!(data?.students?.some((s: any) => s.earned_points !== null));
+						map[a.id] = !!data?.students?.some((s: any) => s.earned_points !== null);
 					} catch (e) {
 						// If the request fails, assume false for now
 						map[a.id] = false;

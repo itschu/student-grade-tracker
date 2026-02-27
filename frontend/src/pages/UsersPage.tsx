@@ -4,12 +4,29 @@ import client from '../api/client';
 import { useToast } from '../contexts/ToastContext';
 import ConfirmDialog from '../components/shared/ConfirmDialog';
 
+type role = 'teacher' | 'student' | 'admin';
+
 interface User {
 	id: string;
 	full_name: string;
 	email: string;
-	role: 'teacher' | 'student' | 'admin';
+	role: role;
 	is_active: boolean;
+}
+
+// payload sent when creating/updating a user
+interface UserPayload {
+	full_name: string;
+	email: string;
+	role?: role; // optional during edit
+	password?: string;
+}
+
+interface AddEditFormProps {
+	initial?: User;
+	editMode?: boolean;
+	onSubmit: (body: UserPayload) => void;
+	onCancel: () => void;
 }
 
 const UsersPage: React.FC = () => {
@@ -22,33 +39,33 @@ const UsersPage: React.FC = () => {
 	const [editTarget, setEditTarget] = useState<User | null>(null);
 	const [deactivateTarget, setDeactivateTarget] = useState<User | null>(null);
 
-	const teachersQ = useQuery({
+	const teachersQ = useQuery<User[]>({
 		queryKey: ['users', 'teacher'],
 		queryFn: () => client.get('/api/v1/users?role=teacher').then((r) => r.data),
 	});
-	const studentsQ = useQuery({
+	const studentsQ = useQuery<User[]>({
 		queryKey: ['users', 'student'],
 		queryFn: () => client.get('/api/v1/users?role=student').then((r) => r.data),
 	});
 
 	const createMut = useMutation({
-		mutationFn: (payload: any) => client.post('/api/v1/users', payload).then((r) => r.data),
+		mutationFn: (payload: UserPayload) => client.post('/api/v1/users', payload).then((r) => r.data),
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ['users'] });
 			showSuccess('User created');
 			setAddOpen(false);
 		},
-		onError: (e: any) => showError(e?.response?.data?.error || 'Failed to create user'),
+		onError: (e: unknown) => showError((e as any)?.response?.data?.error || 'Failed to create user'),
 	});
 
 	const updateMut = useMutation({
-		mutationFn: ({ id, body }: any) => client.patch(`/api/v1/users/${id}`, body).then((r) => r.data),
+		mutationFn: ({ id, body }: { id: string; body: UserPayload }) => client.patch(`/api/v1/users/${id}`, body).then((r) => r.data),
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ['users'] });
 			showSuccess('User updated');
 			setEditTarget(null);
 		},
-		onError: (e: any) => showError(e?.response?.data?.error || 'Failed to update user'),
+		onError: (e: unknown) => showError((e as any)?.response?.data?.error || 'Failed to update user'),
 	});
 
 	const deactivateMut = useMutation({
@@ -58,7 +75,7 @@ const UsersPage: React.FC = () => {
 			showSuccess('User deactivated');
 			setDeactivateTarget(null);
 		},
-		onError: (e: any) => showError(e?.response?.data?.error || 'Failed to deactivate'),
+		onError: (e: unknown) => showError((e as any)?.response?.data?.error || 'Failed to deactivate'),
 	});
 
 	const list = useMemo(() => {
@@ -140,7 +157,7 @@ const UsersPage: React.FC = () => {
 				<div className="fixed inset-0 bg-black/40 z-40 flex items-center justify-center">
 					<div className="bg-white rounded-lg p-6 w-[480px] shadow-xl">
 						<h2 className="text-lg font-semibold mb-4">Add User</h2>
-						<AddEditForm onSubmit={(body) => createMut.mutate(body)} onCancel={() => setAddOpen(false)} />
+						<AddEditForm onSubmit={(body: UserPayload) => createMut.mutate(body)} onCancel={() => setAddOpen(false)} />
 					</div>
 				</div>
 			)}
@@ -150,7 +167,7 @@ const UsersPage: React.FC = () => {
 				<div className="fixed inset-0 bg-black/40 z-40 flex items-center justify-center">
 					<div className="bg-white rounded-lg p-6 w-[480px] shadow-xl">
 						<h2 className="text-lg font-semibold mb-4">Edit User</h2>
-						<AddEditForm initial={editTarget} onSubmit={(body) => updateMut.mutate({ id: editTarget.id, body })} onCancel={() => setEditTarget(null)} editMode />
+						<AddEditForm initial={editTarget} onSubmit={(body: UserPayload) => updateMut.mutate({ id: editTarget.id, body })} onCancel={() => setEditTarget(null)} editMode />
 					</div>
 				</div>
 			)}
@@ -160,7 +177,7 @@ const UsersPage: React.FC = () => {
 	);
 };
 
-function AddEditForm({ initial, onSubmit, onCancel, editMode }: any) {
+function AddEditForm({ initial, onSubmit, onCancel, editMode }: AddEditFormProps) {
 	const [full_name, setFullName] = useState(initial?.full_name || '');
 	const [email, setEmail] = useState(initial?.email || '');
 	const [role, setRole] = useState(initial?.role || 'teacher');
@@ -170,7 +187,7 @@ function AddEditForm({ initial, onSubmit, onCancel, editMode }: any) {
 		<form
 			onSubmit={(e) => {
 				e.preventDefault();
-				const body: any = { full_name, email };
+				const body: UserPayload = { full_name, email };
 				if (!editMode) body.role = role;
 				if (password) body.password = password;
 				onSubmit(body);
@@ -183,9 +200,10 @@ function AddEditForm({ initial, onSubmit, onCancel, editMode }: any) {
 			{!editMode && (
 				<>
 					<label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
-					<select className="w-full border rounded px-3 py-2 mb-3" value={role} onChange={(e) => setRole(e.target.value)}>
+					<select className="w-full border rounded px-3 py-2 mb-3" value={role} onChange={(e) => setRole(e.target.value as role)}>
 						<option value="teacher">Teacher</option>
 						<option value="student">Student</option>
+						<option value="admin">Admin</option>
 					</select>
 				</>
 			)}

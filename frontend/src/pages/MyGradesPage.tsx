@@ -10,6 +10,10 @@ interface Course {
 	name: string;
 	teacher_name?: string;
 }
+interface Term {
+	id: string;
+	name: string;
+}
 
 interface AssignmentGrade {
 	id: string;
@@ -127,12 +131,12 @@ export default function MyGradesPage() {
 		}
 	}, [activeTerm]);
 
-	const termsQuery = useQuery({
+	const termsQuery = useQuery<Term[]>({
 		queryKey: ['student', 'terms'],
 		queryFn: () => client.get('/api/v1/student/terms').then((r) => r.data),
 	});
 
-	const coursesQuery = useQuery({
+	const coursesQuery = useQuery<Course[]>({
 		queryKey: ['student', 'courses', selectedTermId],
 		queryFn: () => client.get(`/api/v1/student/courses?term_id=${selectedTermId}`).then((r) => r.data),
 		enabled: !!selectedTermId,

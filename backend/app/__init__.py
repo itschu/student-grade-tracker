@@ -37,6 +37,9 @@ def create_app(config=None):
         db_url = "sqlite:///" + abs_path.replace("\\", "/")
     app.config["SQLALCHEMY_DATABASE_URI"] = db_url
     app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY")
+    jwt_key = os.getenv("JWT_SECRET_KEY", "")
+    if len(jwt_key.encode("utf-8")) < 32:
+        logging.getLogger(__name__).warning("JWT_SECRET_KEY is shorter than 32 bytes — this is insecure. Generate a strong key with: openssl rand -hex 32")
     app.config["DEBUG"] = os.getenv("FLASK_ENV") == "development"
 
     # If using SQLite locally, allow connections from multiple threads

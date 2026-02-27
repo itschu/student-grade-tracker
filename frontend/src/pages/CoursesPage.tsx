@@ -17,7 +17,7 @@ const CoursesPage: React.FC = () => {
 	const [newCourse, setNewCourse] = useState<any>({ name: '', term_id: activeTerm?.id || '', teacher_id: '' });
 
 	const termsQ = useQuery({ queryKey: ['terms'], queryFn: () => client.get('/api/v1/terms').then((r) => r.data) });
-	const teachersQ = useQuery({ queryKey: ['users', 'teacher'], queryFn: () => client.get('/api/v1/users?role=teacher').then((r) => r.data) });
+	const teachersQ = useQuery({ queryKey: ['users', 'teacher'], queryFn: () => client.get('/api/v1/users?role=teacher').then((r) => r.data), enabled: state?.role === 'admin' });
 
 	const coursesQ = useQuery({
 		queryKey: ['courses', activeTerm?.id],
