@@ -62,19 +62,13 @@ def create_app(config=None):
     jwt.init_app(app)
     bcrypt.init_app(app)
     migrate.init_app(app, db)
-    # Configure allowed frontend origins from env. Support a comma-separated
-    # list in `FRONTEND_ORIGINS` for production (Railway) where the frontend
-    # and backend are on different hostnames. Falls back to `FRONTEND_URL` or
-    # the local dev origin.
-    frontend_origins = os.getenv("FRONTEND_ORIGINS", os.getenv("FRONTEND_URL", "http://localhost:5173"))
-    if frontend_origins:
-        allowed_origins = [o.strip() for o in frontend_origins.split(",") if o.strip()]
-    else:
-        allowed_origins = ["http://localhost:5173"]
 
-    # Apply CORS only to API routes and allow credentials for JS clients
+    # Allow all origins for API routes (development / debugging). Note that
+    # browsers will not send credentials when Access-Control-Allow-Origin is
+    # wildcard; consider echoing the request Origin for credentialed requests
+    # in production if needed.
     CORS(app,
-         resources={r"/api/*": {"origins": allowed_origins}},
+         resources={r"/api/*": {"origins": "*"}},
          supports_credentials=True)
 
     # ensure models are imported so that metadata is attached to db
