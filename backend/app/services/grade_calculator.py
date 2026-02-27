@@ -79,7 +79,7 @@ def convert_to_display(percentage: float, config: GradingConfig) -> str:
     Returns:
         str: Formatted grade string (percentage, letter, or GPA)
     """
-    if config.display_mode == DisplayMode.percentage:
+    if config.display_mode == DisplayMode.percentage.value:
         return f"{percentage:.1f}%"
     
     # Letter or GPA mode: find matching boundary
@@ -92,10 +92,10 @@ def convert_to_display(percentage: float, config: GradingConfig) -> str:
     if boundary is None:
         return f"{percentage:.1f}%"
     
-    if config.display_mode == DisplayMode.letter:
+    if config.display_mode == DisplayMode.letter.value:
         return boundary.label
     
-    if config.display_mode == DisplayMode.gpa:
+    if config.display_mode == DisplayMode.gpa.value:
         if boundary.gpa_value is None:
             # defensive fallback if a config was created incorrectly
             return f"{percentage:.1f}%"

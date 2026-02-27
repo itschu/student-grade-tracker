@@ -27,3 +27,9 @@ Thumbs.db
 .vscode/
 .idea/
 .claude/
+
+# SQLite
+*.db
+*.db-shm
+*.db-wal
+instance/

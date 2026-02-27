@@ -23,7 +23,7 @@ def _serialize_config(config):
     
     return {
         "id": str(config.id),
-        "display_mode": config.display_mode.value,
+        "display_mode": config.display_mode,
         "effective_from_term_id": str(config.effective_from_term_id),
         "created_at": config.created_at.isoformat() if config.created_at else None,
         "boundaries": [
@@ -148,7 +148,7 @@ def create_config():
     # Create config and boundaries in a single transaction
     try:
         config = GradingConfig(
-            display_mode=display_mode_enum,
+            display_mode=display_mode_enum.value,
             effective_from_term_id=effective_from_term_id
         )
         db.session.add(config)

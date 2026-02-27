@@ -28,7 +28,7 @@ def require_role(*roles):
             user = getattr(g, "current_user", None)
             if user is None:
                 abort(401)
-            if user.role.value not in roles:
+            if user.role not in roles:
                 abort(403)
             return fn(*args, **kwargs)
 

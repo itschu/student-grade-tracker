@@ -19,11 +19,30 @@ migrate = Migrate()
 def create_app(config=None):
     load_dotenv()
     app = Flask(__name__)
+    app.url_map.strict_slashes = False
 
     # configuration from environment
-    app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DATABASE_URL")
+    db_url = os.getenv("DATABASE_URL")
+    # Flask-SQLAlchemy will treat a relative SQLite path as relative to
+    # `app.instance_path`, but Alembic (used by `flask db upgrade`) bypasses
+    # that shortcut and uses the raw value from config.  If the value is a
+    # relative sqlite URL we resolve it here so both migrations and runtime
+    # talk to the same file.
+    if db_url and db_url.startswith("sqlite:///") and not db_url.startswith("sqlite:////"):
+        # strip the leading scheme and re‑join against the instance folder
+        rel_path = db_url[len("sqlite:///"):]
+        abs_path = os.path.join(app.instance_path, rel_path)
+        # ensure directory exists
+        os.makedirs(os.path.dirname(abs_path), exist_ok=True)
+        db_url = "sqlite:///" + abs_path.replace("\\", "/")
+    app.config["SQLALCHEMY_DATABASE_URI"] = db_url
     app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY")
     app.config["DEBUG"] = os.getenv("FLASK_ENV") == "development"
+
+    # If using SQLite locally, allow connections from multiple threads
+    db_url = app.config.get("SQLALCHEMY_DATABASE_URI")
+    if db_url and db_url.startswith("sqlite"):
+        app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {"connect_args": {"check_same_thread": False}}
 
     # initialize extensions
     db.init_app(app)
@@ -41,7 +60,7 @@ def create_app(config=None):
             from .models import User, UserRole
             logger = logging.getLogger(__name__)
             
-            existing_admin = User.query.filter_by(role=UserRole.admin).first()
+            existing_admin = User.query.filter_by(role=UserRole.admin.value).first()
             if existing_admin:
                 logger.info("Admin user already exists, skipping")
             else:
@@ -54,7 +73,7 @@ def create_app(config=None):
                         email=admin_email,
                         password_hash=hashed,
                         full_name="Admin",
-                        role=UserRole.admin,
+                        role=UserRole.admin.value,
                         is_active=True,
                     )
                     db.session.add(admin)

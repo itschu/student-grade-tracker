@@ -23,7 +23,7 @@ def run():
             full_name="School Admin",
             email=admin_email,
             password_hash=password_hash,
-            role=UserRole.admin,
+            role=UserRole.admin.value,
             is_active=True,
         )
         db.session.add(admin)

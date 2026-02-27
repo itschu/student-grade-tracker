@@ -35,7 +35,7 @@ def list_grades():
     if str(assignment.course_id) != course_id:
         return jsonify({"error": "Assignment not found"}), 404
 
-    if g.current_user and g.current_user.role.value == "teacher":
+    if g.current_user and g.current_user.role == "teacher":
         # Use the assignment's course_id for validation, not the request body course_id
         assert_teacher_owns_course(str(g.current_user.id), str(assignment.course_id))
 
@@ -160,7 +160,7 @@ def student_grades():
     if not course_id or not student_id:
         return jsonify({"error": "course_id and student_id are required"}), 400
 
-    role = g.current_user.role.value if g.current_user else None
+    role = g.current_user.role if g.current_user else None
     if role == "admin":
         pass
     elif role == "teacher":
@@ -180,7 +180,7 @@ def student_grades():
             {
                 "assignment_id": str(a.id),
                 "name": a.name,
-                "type": a.type.value,
+                "type": a.type,
                 "max_points": float(a.max_points),
                 "due_date": a.due_date.isoformat() if a.due_date else None,
                 "earned_points": float(grade_row.earned_points) if grade_row and grade_row.earned_points is not None else None,

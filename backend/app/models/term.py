@@ -1,6 +1,6 @@
 import uuid
+import sqlalchemy as sa
 from sqlalchemy import func
-from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy import Column, String, Date, Boolean
 from app import db
 
@@ -8,7 +8,7 @@ from app import db
 class Term(db.Model):
     __tablename__ = "term"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id = Column(sa.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     name = Column(String(255), nullable=False)
     start_date = Column(Date, nullable=False)
     end_date = Column(Date, nullable=False)

@@ -14,7 +14,7 @@ def _assignment_dict(a: Assignment) -> dict:
         "id": str(a.id),
         "course_id": str(a.course_id),
         "name": a.name,
-        "type": a.type.value,
+        "type": a.type,
         "max_points": float(a.max_points),
         "due_date": a.due_date.isoformat() if a.due_date else None,
         "created_at": a.created_at.isoformat() if a.created_at else None,
@@ -28,7 +28,7 @@ def list_assignments():
     course_id = request.args.get("course_id")
     if not course_id:
         return jsonify({"error": "course_id is required"}), 400
-    if g.current_user and g.current_user.role.value == "teacher":
+    if g.current_user and g.current_user.role == "teacher":
         assert_teacher_owns_course(str(g.current_user.id), course_id)
     assignments = Assignment.query.filter_by(course_id=course_id).order_by(Assignment.created_at).all()
     return jsonify([_assignment_dict(a) for a in assignments]), 200
@@ -65,7 +65,7 @@ def create_assignment():
     assignment = Assignment(
         course_id=course_id,
         name=name,
-        type=type_enum,
+        type=type_enum.value,
         max_points=max_points,
         due_date=due_date,
     )
@@ -82,7 +82,7 @@ def update_assignment(assignment_id):
     if assignment is None:
         return jsonify({"error": "Assignment not found"}), 404
 
-    if g.current_user and g.current_user.role.value == "teacher":
+    if g.current_user and g.current_user.role == "teacher":
         assert_teacher_owns_course(str(g.current_user.id), str(assignment.course_id))
 
     data = request.get_json() or {}
@@ -92,7 +92,7 @@ def update_assignment(assignment_id):
         assignment.name = data.get("name")
     if "type" in data:
         try:
-            assignment.type = AssignmentType(data.get("type"))
+            assignment.type = AssignmentType(data.get("type")).value
         except ValueError:
             return jsonify({"error": "Invalid assignment type"}), 422
     if "due_date" in data:
@@ -134,7 +134,7 @@ def delete_assignment(assignment_id):
     if assignment is None:
         return jsonify({"error": "Assignment not found"}), 404
 
-    if g.current_user and g.current_user.role.value == "teacher":
+    if g.current_user and g.current_user.role == "teacher":
         assert_teacher_owns_course(str(g.current_user.id), str(assignment.course_id))
         if Grade.query.filter_by(assignment_id=str(assignment_id)).first():
             return jsonify({"error": "Contact admin to delete graded assignments"}), 409

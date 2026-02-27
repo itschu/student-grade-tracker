@@ -33,7 +33,7 @@ def dashboard():
     if term is None:
         return jsonify({"error": "Term not found"}), 404
 
-    is_teacher = g.current_user and g.current_user.role.value == "teacher"
+    is_teacher = g.current_user and g.current_user.role == "teacher"
     if is_teacher and course_id:
         assert_teacher_owns_course(str(g.current_user.id), course_id)
 
@@ -92,7 +92,7 @@ def dashboard():
     # grade distribution
     config = get_effective_config(term_id)
     bands = []
-    if config is None or config.display_mode == DisplayMode.percentage:
+    if config is None or config.display_mode == DisplayMode.percentage.value:
         bands = [("A", 90, 100), ("B", 80, 89), ("C", 70, 79), ("D", 60, 69), ("F", 0, 59)]
     else:
         # custom boundaries
@@ -110,14 +110,12 @@ def dashboard():
             Enrollment.student_id,
             Enrollment.course_id,
             case(
-                [
                     (
                         func.sum(Assignment.max_points) > 0,
                         func.sum(func.coalesce(Grade.earned_points, 0))
                         / func.sum(Assignment.max_points)
                         * 100,
-                    )
-                ],
+                    ),
                 else_=0,
             ).label("final_grade"),
         )

@@ -14,7 +14,7 @@ def _user_dict(user: User) -> dict:
         "id": str(user.id),
         "full_name": user.full_name,
         "email": user.email,
-        "role": user.role.value,
+        "role": user.role,
         "is_active": user.is_active,
         "created_at": user.created_at.isoformat() if user.created_at else None,
     }
@@ -33,7 +33,7 @@ def list_users():
             role_enum = UserRole(role)
         except ValueError:
             return jsonify({"error": "Invalid role"}), 400
-        query = query.filter(User.role == role_enum)
+        query = query.filter(User.role == role_enum.value)
     if q:
         ilike_q = f"%{q}%"
         query = query.filter(
@@ -65,7 +65,7 @@ def create_user():
         return jsonify({"error": "Email already in use"}), 409
 
     pw_hash = bcrypt.generate_password_hash(password).decode("utf-8")
-    user = User(full_name=full_name, email=email, role=role_enum, password_hash=pw_hash)
+    user = User(full_name=full_name, email=email, role=role_enum.value, password_hash=pw_hash)
     db.session.add(user)
     db.session.commit()
     return jsonify(_user_dict(user)), 201

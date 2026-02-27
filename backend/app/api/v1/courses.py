@@ -41,7 +41,7 @@ def list_courses():
     query = Course.query
     if term_id:
         query = query.filter(Course.term_id == term_id)
-    if g.current_user and g.current_user.role.value == "teacher":
+    if g.current_user and g.current_user.role == "teacher":
         query = query.filter(Course.teacher_id == str(g.current_user.id))
     courses = query.all()
     return jsonify([_course_dict(c) for c in courses]), 200
@@ -63,7 +63,7 @@ def create_course():
     if term is None:
         return jsonify({"error": "Term not found"}), 404
     teacher = User.query.get(teacher_id)
-    if teacher is None or teacher.role.value != "teacher":
+    if teacher is None or teacher.role != "teacher":
         return jsonify({"error": "Teacher user not found or invalid"}), 400
 
     course = Course(name=name, term_id=term_id, teacher_id=teacher_id)
@@ -105,7 +105,7 @@ def list_students(course_id):
     course = Course.query.get(str(course_id))
     if course is None:
         return jsonify({"error": "Course not found"}), 404
-    if g.current_user and g.current_user.role.value == "teacher":
+    if g.current_user and g.current_user.role == "teacher":
         assert_teacher_owns_course(str(g.current_user.id), str(course_id))
     students = (
         User.query.join(Enrollment, User.id == Enrollment.student_id)

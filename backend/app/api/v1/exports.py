@@ -40,7 +40,7 @@ def gradebook():
 
     term = Term.query.get(course.term_id) if course.term_id else None
 
-    if g.current_user and g.current_user.role.value == "teacher":
+    if g.current_user and g.current_user.role == "teacher":
         assert_teacher_owns_course(str(g.current_user.id), course_id)
 
     students = (
